@@ -22,7 +22,7 @@ void GaussianFilter::set_blur(int r) {
   is_cancelled_ = false;
 
   blur_radius_ = r;
-  int kernel_size = ceil(2 * blur_radius_) + 1;
+  int kernel_size = ceil(6 * blur_radius_) + 1;
 
   if (source_image_->isNull() || r <= 0) {
     emit blur_completed();
@@ -47,7 +47,6 @@ void GaussianFilter::set_blur(int r) {
   }
 
   QImage second = apply_blur_one_dimension(kernel.get(), first, false);
-
   result_image_ = QPixmap::fromImage(second);
 
   emit_completion_signals();
@@ -58,7 +57,7 @@ void GaussianFilter::cancel_blur() { is_cancelled_ = true; }
 int GaussianFilter::get_blur_radius() { return blur_radius_; }
 
 void GaussianFilter::generate_kernel(double kernel[], int sigma) {
-  int size = ceil(2 * sigma) + 1;
+  int size = ceil(6 * sigma) + 1;
   int center = size / 2;
   double sum = 0.0;
 
@@ -80,10 +79,18 @@ QImage GaussianFilter::apply_blur_one_dimension(double kernel[], QImage &source,
   QImage result(source);
   int height = source.height();
   int width = source.width();
-  int kernel_size = ceil(2 * blur_radius_) + 1;
+  int kernel_size = ceil(6 * blur_radius_) + 1;
   int radius = kernel_size / 2;
 
-  for (int i = 0; i < height && !is_cancelled_; i++) {
+  QMutex mutex;
+  std::atomic<int> progress{0};
+
+  QVector<int> vector;
+  for (int i = 0; i < height && !is_cancelled_; ++i)
+    vector.append(i);
+
+  auto spin = [=, &result, &progress, &mutex](int i) {
+    QRgb *buffer = new QRgb[width];
     for (int j = 0; j < width && !is_cancelled_; j++) {
       double sum_red = 0.0, sum_green = 0.0, sum_blue = 0.0, sum_alpha = 0.0;
       double kernel_sum = 0.0;
@@ -96,8 +103,8 @@ QImage GaussianFilter::apply_blur_one_dimension(double kernel[], QImage &source,
         double weight = kernel[k + radius];
         kernel_sum += weight;
 
-        QRgb *source_line = reinterpret_cast<QRgb *>(
-            source.scanLine(horisontal ? i : curr_pixel));
+        QRgb *source_line =
+            (QRgb *)(source.scanLine(horisontal ? i : curr_pixel));
 
         int index = horisontal ? curr_pixel : j;
 
@@ -106,19 +113,31 @@ QImage GaussianFilter::apply_blur_one_dimension(double kernel[], QImage &source,
         sum_blue += qBlue(source_line[index]) * weight;
         sum_alpha += qAlpha(source_line[index]) * weight;
       }
-      QRgb *result_line = reinterpret_cast<QRgb *>(result.scanLine(i));
 
-      result_line[j] =
+      buffer[j] =
           qRgba(qBound(0, static_cast<int>(sum_red / kernel_sum), 255),
                 qBound(0, static_cast<int>(sum_green / kernel_sum), 255),
                 qBound(0, static_cast<int>(sum_blue / kernel_sum), 255),
                 qBound(0, static_cast<int>(sum_alpha / kernel_sum), 255));
     }
-    int progress =
+    {
+      QMutexLocker locker(&mutex);
+      QRgb *result_line = (QRgb *)(result.scanLine(i));
+      memcpy(result_line, buffer, width * sizeof(QRgb));
+    }
+
+    delete[] buffer;
+
+    progress =
         static_cast<int>(((i + 1) * 50.0 / height) + (horisontal ? 0 : 50));
-    emit progress_updated(progress);
-  }
-  return result;
+    {
+      QMutexLocker locker(&mutex);
+      emit progress_updated(progress);
+    }
+  };
+
+  QtConcurrent::blockingMap(vector, spin);
+  return is_cancelled_ ? QImage() : result;
 }
 
 QPixmap GaussianFilter::get_blurred_image() { return result_image_; }

@@ -17,9 +17,6 @@ FilterImageWidget::FilterImageWidget(QWidget *parent)
   connect(progress_dialog_, &QProgressDialog::canceled, this,
           &FilterImageWidget::cancel_blur);
 
-  filter_->moveToThread(&filter_thread_);
-  filter_thread_.start();
-
   setup_controls();
 }
 
@@ -36,6 +33,7 @@ void FilterImageWidget::setup_controls() {
   apply_filter_btn_ = new QPushButton("Применить", this);
   connect(apply_filter_btn_, &QPushButton::clicked, this,
           &FilterImageWidget::apply_botton_clicked);
+  apply_filter_btn_->setShortcut(Qt::Key_Enter);
 
   QHBoxLayout *h_layout = new QHBoxLayout();
   h_layout->setAlignment(Qt::AlignLeft);
@@ -70,9 +68,6 @@ void FilterImageWidget::setup_progress_dialog() {
 FilterImageWidget::~FilterImageWidget() {
   settings_.setValue("blur_radius", filter_->get_blur_radius());
 
-  filter_thread_.quit();
-  filter_thread_.wait();
-
   if (filter_ != nullptr) {
     delete filter_;
   }
@@ -102,6 +97,10 @@ int FilterImageWidget::get_blur_radius() { return filter_->get_blur_radius(); }
 QPixmap FilterImageWidget::get_blurred_image() { return blurred_image_; }
 
 void FilterImageWidget::apply_botton_clicked() {
+  progress_dialog_->reset();
+  progress_dialog_->setValue(0);
+  progress_dialog_->show();
+
   emit apply_filter(filter_spb_->value());
 }
 

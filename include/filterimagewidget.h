@@ -30,7 +30,6 @@ private:
   QPushButton *apply_filter_btn_;
   GaussianFilter *filter_;
   QSettings settings_;
-  QThread filter_thread_;
   QProgressDialog *progress_dialog_;
 
 private slots:

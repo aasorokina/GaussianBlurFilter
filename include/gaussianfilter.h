@@ -1,8 +1,10 @@
 #ifndef GAUSSIANFILTER_H
 #define GAUSSIANFILTER_H
 
+#include <QtConcurrent/QtConcurrent>
 #include <QtWidgets>
 #include <atomic>
+#include <functional>
 
 class GaussianFilter : public QObject {
   Q_OBJECT
@@ -16,11 +18,11 @@ public:
   QImage apply_blur_one_dimension(double kernel[], QImage &source,
                                   bool horisontal);
   QPixmap get_blurred_image();
-  void emit_completion_signals();
 
 public slots:
   void set_blur(int r);
   void cancel_blur();
+  void emit_completion_signals();
 
 signals:
   void blur_completed();
