@@ -23,3 +23,25 @@
    cmake ..
    cmake --build .
 ```  
+
+## Запуск с использованием Docker
+
+Сборка образа:
+```bash
+   cd gaussian_filter
+   docker build -t gaussian-filter . 
+```
+
+Запуск:
+```bash
+   docker run -it gaussian-filter
+```
+Запуск с графическим интерфейсом для Linux (WSL):
+```bash
+   xhost +local:docker
+   docker run -it --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix gaussian-filter
+```
+Запуск с графическим интерфейсом для Windows с использованием X-сервера (VcXsrv):
+```powershell
+   docker run -it --rm -e DISPLAY=host.docker.internal:0 gaussian-filter
+```
