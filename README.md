@@ -14,7 +14,7 @@
 ## Установка
 
 ```bash
-   cd gaussian_filter
+   cd GaussianBlurFilter
    mkdir build
    cd build
 ```  
@@ -28,7 +28,7 @@
 
 Сборка образа:
 ```bash
-   cd gaussian_filter
+   cd GaussianBlurFilter
    docker build -t gaussian-filter . 
 ```
 
