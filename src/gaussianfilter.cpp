@@ -56,7 +56,7 @@ void GaussianFilter::cancel_blur() { is_cancelled_ = true; }
 
 int GaussianFilter::get_blur_radius() { return blur_radius_; }
 
-void GaussianFilter::generate_kernel(double kernel[], int sigma) {
+void GaussianFilter::generate_kernel(double *kernel, int sigma) {
   int size = ceil(6 * sigma) + 1;
   int center = size / 2;
   double sum = 0.0;

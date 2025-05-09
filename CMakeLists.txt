@@ -14,17 +14,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets Core Concurrent REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Core Concurrent REQUIRED)
 
+file(GLOB_RECURSE SRC_CPP CONFIGURE_DEPENDS src/*.cpp)
+file(GLOB_RECURSE SRC_H   CONFIGURE_DEPENDS include/*.h)
+file(GLOB_RECURSE QRC_FILES CONFIGURE_DEPENDS resources/*.qrc)
+
 set(PROJECT_SOURCES
-        include/mainwindow.h
-        include/sourceimgwidget.h
-        include/filterimagewidget.h
-        include/gaussianfilter.h
-        src/main.cpp
-        src/mainwindow.cpp
-        src/sourceimgwidget.cpp
-        src/filterimagewidget.cpp
-        src/gaussianfilter.cpp
-        resources/resources.qrc
+    ${SRC_CPP}
+    ${SRC_H}
+    ${QRC_FILES}
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -33,18 +30,12 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
     )
 else()
-    if(ANDROID)
-        add_library(gaussian_filter SHARED
-            ${PROJECT_SOURCES}
-        )
-    else()
-        add_executable(gaussian_filter
-            ${PROJECT_SOURCES}
-        )
-    endif()
+    add_executable(gaussian_filter
+        ${PROJECT_SOURCES}
+    )
 endif()
 
-target_link_libraries(gaussian_filter Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Concurrent)
+target_link_libraries(gaussian_filter PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Concurrent)
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(gaussian_filter)
